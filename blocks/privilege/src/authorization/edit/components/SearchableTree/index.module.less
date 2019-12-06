@@ -1,0 +1,38 @@
+.searchInput {
+  padding: 10px;
+}
+
+.searchContent {
+  display: flex;
+  height: calc(100% - 90px);
+
+  :global {
+    .ant-tree li.filter-node > span {
+      color: #1890FF!important;
+    }
+  }
+
+  .searchTree {
+    flex: 3;
+    border-top: 1px solid #efefef;
+    border-right: 1px solid #efefef;
+    padding: 5px 10px 10px 10px;
+    overflow-y: auto;
+  }
+
+  .searchPersonList {
+    flex: 2;
+    border-top: 1px solid #efefef;
+    padding: 0 12px;
+    overflow-y: auto;
+
+    .searchPersonTitle {
+      color: #333;
+      line-height: 40px;
+    }
+
+    .searchPersonCheckWrap {
+      line-height: 24px;
+    }
+  }
+}

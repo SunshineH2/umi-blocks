@@ -1,0 +1,19 @@
+.content {
+  display: flex;
+
+  .firstCard, .secondCard {
+    flex: 1;
+    height: 500px;
+    border: 1px solid #efefef;
+  }
+
+  .firstCard {
+    margin-right: 17px;
+    
+    :global {
+      .td-card-body {
+        padding: 0;
+      }
+    }
+  }
+}
