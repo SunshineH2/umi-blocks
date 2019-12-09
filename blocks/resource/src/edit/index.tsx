@@ -45,7 +45,7 @@ const descLayout = {
 interface ResourceFormProps extends PageBasicPropsModel, FormComponentProps {}
 
 const ResourceForm: React.FC<ResourceFormProps> = props => {
-  const { getFieldDecorator, setFieldsValue } = props.form;
+  const { getFieldDecorator } = props.form;
   const [isCreate, setIsCreate] = useState<boolean>(true);
   const [id, setId] = useState<string>('');
   const [menu, setMenu] = useState<TreeNode[]>([]);
@@ -96,7 +96,7 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
         message.error(error.message);
       }
     },
-    [setFieldsValue],
+    [],
   );
 
   useEffect(() => {
