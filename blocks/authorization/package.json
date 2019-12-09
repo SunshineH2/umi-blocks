@@ -7,7 +7,7 @@
     "name": "huangshanshan",
     "email": "huangshanshan@thundersdata.com"
   },
-  "repository": "umijs/umi-blocks/privilegeBlock",
+  "repository": "umijs/umi-blocks/authorization",
   "scripts": {
     "commit": "git-cz",
     "start": "umi dev",
