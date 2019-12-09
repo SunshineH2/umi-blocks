@@ -3,10 +3,10 @@ import { Table } from '@td-design/web';
 import { FormItemProps, FormValue } from '@td-design/web/lib/form-creator';
 import { ActionButtonProps } from '@td-design/web/lib/action-buttons';
 import { Button, Divider, Popconfirm, message } from 'antd';
-import { PAGINATION_CONFIGS } from '../constant';
+import { PAGINATION_CONFIGS } from './constant';
 import styles from './index.module.less';
 import router from 'umi/router';
-import { CustomWindow } from '@/interfaces/common';
+import { CustomWindow } from './interfaces/common';
 
 const Authorization: React.FC = () => {
   const [roleListObj, setRoleList] = useState<

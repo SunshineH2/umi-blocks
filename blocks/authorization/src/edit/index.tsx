@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container } from '@td-design/web';
 import { Form, Row, Col, Input, Button, Table, Checkbox, message, Modal } from 'antd';
-import { PageBasicPropsModel, ItemInter, CustomWindow } from '../../interfaces/common';
+import { PageBasicPropsModel, ItemInter, CustomWindow } from '../interfaces/common';
 import { FormComponentProps } from 'antd/lib/form';
 import { array } from '@td-design/utils';
 import { CheckboxChangeEvent } from 'antd/lib/checkbox';
 import styles from './index.module.less';
 import router from 'umi/router';
-import deleteEmptyChildren from '../../utils/deleteEmptyChildren';
+import deleteEmptyChildren from '../utils/deleteEmptyChildren';
 import SelectModal from './components/SelectModal';
-import stores from '../../stores';
-import { AuthorizationStore } from '../../interfaces/authorization.store';
+import stores from '../stores';
+import { AuthorizationStore } from '../interfaces/authorization.store';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
@@ -116,7 +116,6 @@ const Edit: React.FC<EditProps> = props => {
     async (
       roleId: number,
       resList: ResourceInter[],
-      currentList: defs.authorization.ResourceTreeObject[],
       currentOrgList: defs.authorization.OrgTreeDTO[],
     ) => {
       try {
@@ -133,37 +132,25 @@ const Edit: React.FC<EditProps> = props => {
         });
         // 回显负责人
         setCheckedUsers(userIdList, currentOrgList);
-        // 回显选中的权限
-        const ids = resourceVOList!.map(item => item.id);
-        const currentResources = resList.map(resource =>
-          ids.indexOf(resource.id) > -1 ? { id: resource.id, checked: true } : resource,
+        // 回显功能按钮
+        const privilegeIds = resourceVOList!.filter(i => i.type === 1).map(item => item.id);
+        const currentResources = resList.map(item =>
+          privilegeIds.indexOf(item.id) > -1
+            ? {
+                id: item.id,
+                checked: true,
+              }
+            : item,
         );
         setResources(currentResources);
-        const parentIds: number[] = [];
-        // 找到选中的权限id的所有父节点
-        resourceVOList!.map(item => {
-          parentIds.push(...getParentIds(item.parentId!, currentList), item.parentId!);
-        });
-        const selectedIds: number[] = [];
-        [...new Set(parentIds)].map(parentId => {
-          // 该id下的所有功能权限id列表
-          const allPrivilegeIds = getChildren(currentList, parentId)
-            .map(item => item.privilegeList!.map(i => i.id))
-            .flat();
-          // 和currentResources做匹配，
-          const allChecked = currentResources
-            .filter(item => allPrivilegeIds.indexOf(item.id) > -1)
-            .every(i => i.checked);
-          if (allChecked) {
-            selectedIds.push(parentId);
-          }
-        });
-        setSelectedRowKeys(selectedIds);
+        // 回显菜单
+        const keys = resourceVOList!.filter(i => i.type === 0).map(item => item.id!);
+        setSelectedRowKeys(keys);
       } catch (error) {
         message.error(error.message);
       }
     },
-    [getParentIds, setCheckedUsers, setFieldsValue],
+    [setCheckedUsers, setFieldsValue],
   );
 
   /** 获取后端数据并进行处理 */
@@ -187,7 +174,7 @@ const Edit: React.FC<EditProps> = props => {
         setResources(res);
         const { id } = props.location.query;
         if (id) {
-          fetchInitValue(+id, res, currentList, currentOrgList);
+          fetchInitValue(+id, res, currentOrgList);
         }
       } catch (error) {
         message.error(error.message);
@@ -231,7 +218,7 @@ const Edit: React.FC<EditProps> = props => {
           clientKey: ((window as unknown) as CustomWindow).authConfig.client_id,
           role,
           comment,
-          resourceIds,
+          resourceIds: [...new Set([...resourceIds, ...selectedRowKeys])],
           userIds: checkedKeys,
         };
         if (roleId) {
@@ -306,75 +293,13 @@ const Edit: React.FC<EditProps> = props => {
       resource.id === privilegeId ? { id: privilegeId, checked } : resource,
     );
     setResources(res);
-
-    if (record.children) {
-      // 当前以及children下的所有功能权限id
-      const allPrivilegeIds = array
-        .deepFlatten([record])
-        .map(item => item.privilegeList!.map(priviledge => priviledge.id!))
-        .flat();
-      judgeCurrentRecordIsAllChecked(allPrivilegeIds, privilegeId, checked, record);
-    } else {
-      // 当前record中的功能权限id
-      const allPrivilegeIds = record.privilegeList!.map(i => i.id!);
-      judgeCurrentRecordIsAllChecked(allPrivilegeIds, privilegeId, checked, record);
-    }
-  };
-
-  /** 判断当前record下的privilege是否全被选中 */
-  const judgeCurrentRecordIsAllChecked = (
-    allPrivilegeIds: number[],
-    privilegeId: number,
-    checked: boolean,
-    record: defs.authorization.ResourceTreeObject,
-  ) => {
-    // 筛选出resources中当前行的privilegeList
-    const currentIds = resources.filter(resource => allPrivilegeIds.some(id => resource.id === id));
-    // 用当前id的checkbox去替换resources中的checkbox，并判断是否全被选中
-    const bool = currentIds
-      .map(item => (item.id === privilegeId ? { id: privilegeId, checked } : item))
-      .every(item => item.checked);
-    if (bool) {
+    if (checked) {
+      // 当前功能权限所对应的菜单的所有父级菜单也被选中
+      const parentIds = [...getParentIds(record.parentId!, list), record.parentId!];
       setSelectedRowKeys([
-        ...selectedRowKeys,
-        record.id!,
-        ...getParentAllChecked(privilegeId, checked, record.parentId!),
+        ...new Set([...selectedRowKeys, record.id!, ...parentIds, record.parentId!]),
       ]);
-    } else {
-      const parentIds = getParentIds(record.parentId!, list);
-      const res = selectedRowKeys.filter(
-        item => [record.id, record.parentId, ...parentIds].indexOf(item) < 0,
-      );
-      setSelectedRowKeys(res);
     }
-  };
-
-  /** 判断当前id的parent的privilege是否全被选中，返回功能权限已被选中的parentId */
-  const getParentAllChecked = (privilegeId: number, checked: boolean, parentId: number) => {
-    // 首先找到parentIds
-    const parentIds = getParentIds(parentId, list).concat([parentId]);
-    // 筛选出parentIds数组里面每个id所对应的privilegeList都已经选中的parentId
-    const parentLists = array.deepFlatten(list).filter(item => parentIds.indexOf(item.id!) > -1);
-    const checkedParentIds: number[] = [];
-    parentLists.map(item => {
-      // 当前id的功能权限id
-      const privilegeIds = item.privilegeList!.map(item => item.id);
-      // 当前id的children的功能权限id
-      const flattenChildrenList = getChildren(list, item.id!)
-        .map(i => i.privilegeList!.map(privilege => privilege.id))
-        .flat();
-      // 获取当前id以及children的resourceObj的数组
-      const matchResourceIds = resources.filter(resource =>
-        [...flattenChildrenList, ...privilegeIds].some(id => resource.id === id),
-      );
-      const isAllChecked = matchResourceIds
-        .map(item => (item.id === privilegeId ? { id: privilegeId, checked } : item))
-        .every(item => item.checked);
-      if (isAllChecked) {
-        checkedParentIds.push(item.id!);
-      }
-    });
-    return checkedParentIds;
   };
 
   /** 根据id找到对应的list以及children并把数据打平 */
@@ -395,12 +320,12 @@ const Edit: React.FC<EditProps> = props => {
 
   const columns = [
     {
-      title: '模块',
+      title: '菜单',
       dataIndex: 'description',
       width: '30%',
     },
     {
-      title: '功能权限',
+      title: '功能按钮',
       width: '70%',
       render: (record: defs.authorization.ResourceTreeObject) => {
         return record.privilegeList && record.privilegeList.length ? (
@@ -431,51 +356,31 @@ const Edit: React.FC<EditProps> = props => {
     selectedRowKeys,
 
     onSelect: (record: defs.authorization.ResourceTreeObject, selected: boolean) => {
-      // 包含当前行以及当前行下的children的数据
-      const flattenRows = array.deepFlatten([record]);
-      const flattenKeys = flattenRows.map(item => item.id!);
-      const flattenResources = flattenRows
-        .map(item => item.privilegeList!.map(privilege => privilege.id))
-        .flat();
-      // 当前行的parent的数据
-      const parentIds = getParentIds(record.id!, list);
-
-      // 选择/取消某行后控制功能权限为选中/不选中
-      const res = resources
-        .filter(resource => flattenResources.every(id => id !== resource.id))
-        .concat(flattenResources.map(id => ({ id: id!, checked: selected })));
-      setResources(res);
-
-      // 控制当前行的children的key被选中/取消
       if (selected) {
-        // 判断每一个parentId下的数据所对应的children的id
-        const resKeys: number[] = [];
-        parentIds.map(parentId => {
-          // id下的childrenid
-          const childrenIds = getChildren(list, parentId).map(item => item.id);
-          // 把childrenId与list做匹配
-          const childrenList = array
-            .deepFlatten(list)
-            .filter(item => childrenIds.indexOf(item.id) > -1);
-          // 获取到除当前id及children的privilegeIds
-          const privilegeIds = childrenList
-            .map(item => item.privilegeList!.map(i => i.id))
-            .flat()
-            .filter(item => flattenResources.indexOf(item) < 0);
-          // 判断是否已经选中
-          const allChecked = resources
-            .filter(resource => privilegeIds.indexOf(resource.id) > -1)
-            .every(item => item.checked);
-          if (allChecked) {
-            resKeys.push(parentId);
-          }
-        });
-        setSelectedRowKeys([...selectedRowKeys, ...flattenKeys, ...resKeys]);
-      } else {
-        const res = selectedRowKeys.filter(
-          item => [...flattenKeys, ...parentIds].indexOf(item) < 0,
-        );
+        // 当前行的所有父级菜单也被选中
+        const parentIds = [...getParentIds(record.parentId!, list), record.parentId!];
+        const res = [...new Set([...selectedRowKeys, record.id!, ...parentIds])];
         setSelectedRowKeys(res);
+      } else {
+        // 当前行的所有子级菜单都去掉选中状态
+        const childrenList = getChildren(list, record.id!);
+        const childrenIds = childrenList.map(item => item.id!);
+        const res = selectedRowKeys.filter(item => childrenIds.indexOf(item) < 0);
+        setSelectedRowKeys(res);
+        // 当前行以及所有子级菜单的功能权限都去掉选中状态
+        const privilegeIds = record.privilegeList!.map(item => item.id);
+        const childrenPrivilegeIds = childrenList
+          .map(item => item.privilegeList!.map(i => i.id))
+          .flat();
+        const currentResource = resources.map(item =>
+          [...privilegeIds, ...childrenPrivilegeIds].indexOf(item.id) > -1
+            ? {
+                id: item.id,
+                checked: false,
+              }
+            : item,
+        );
+        setResources(currentResource);
       }
     },
 
@@ -486,17 +391,13 @@ const Edit: React.FC<EditProps> = props => {
         setSelectedRowKeys(selectedRowKeys);
       } else {
         setSelectedRowKeys([]);
+        // 所有的功能权限都取消选中状态
+        const currentResources = resources.map(item => ({
+          id: item.id,
+          checked: false,
+        }));
+        setResources(currentResources);
       }
-
-      // 控制功能权限全部选中/取消
-      const ids = array
-        .deepFlatten(list)
-        .map(item => item.privilegeList!.map(privilege => privilege.id));
-      const res = ids.flat().map(id => ({
-        id: id!,
-        checked: selected,
-      }));
-      setResources(res);
     },
   };
 

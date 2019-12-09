@@ -1,5 +1,5 @@
 {
-  "name": "privilege",
+  "name": "authorization",
   "version": "0.0.1",
   "description": "权限配置",
   "main": "src/index.js",

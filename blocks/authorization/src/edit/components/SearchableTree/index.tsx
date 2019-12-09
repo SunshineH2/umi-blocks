@@ -4,8 +4,8 @@ import { difference } from 'lodash';
 import styles from './index.module.less';
 import { AntTreeNode, AntTreeNodeSelectedEvent } from 'antd/lib/tree';
 import { CheckboxChangeEvent } from 'antd/lib/checkbox';
-import stores from '../../../../stores';
-import { AuthorizationStore } from '../../../../interfaces/authorization.store';
+import stores from '../../../stores';
+import { AuthorizationStore } from '../../../interfaces/authorization.store';
 
 const { TreeNode } = Tree;
 const { Search } = Input;

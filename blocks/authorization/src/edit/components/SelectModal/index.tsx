@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import styles from './index.module.less';
 import { Modal, Tag } from 'antd';
 import SearchableTree from '../SearchableTree';
-import { ItemInter } from '../../../../interfaces/common';
+import { ItemInter } from '../../../interfaces/common';
 import { Card } from '@td-design/web';
-import stores from '../../../../stores';
-import { AuthorizationStore } from '../../../../interfaces/authorization.store';
+import stores from '../../../stores';
+import { AuthorizationStore } from '../../../interfaces/authorization.store';
 
 interface SelectModalProps {
   onClose: () => void;

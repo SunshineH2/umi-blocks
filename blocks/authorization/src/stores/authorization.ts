@@ -4,9 +4,9 @@
  * @作者: 黄姗姗
  * @Date: 2019-12-04 16:20:00
  * @LastEditors: 黄姗姗
- * @LastEditTime: 2019-12-04 19:31:36
+ * @LastEditTime: 2019-12-09 15:41:29
  */
-import { AuthorizationStore } from '@/interfaces/authorization.store';
+import { AuthorizationStore } from '../interfaces/authorization.store';
 
 const authorizationStore: AuthorizationStore = {
   // 组织架构树

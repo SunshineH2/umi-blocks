@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal } from 'antd';
 import styles from './index.module.less';
-import { typeList } from '../../index';
+import { TYPE_LIST } from '../../constant';
 
 interface DetailModalProps {
   visible: boolean;
@@ -13,7 +13,7 @@ const DetailModal = (props: DetailModalProps) => {
   const { visible, onClose, detail } = props;
 
   let typeName = '';
-  const matchTypeObj = typeList.find(row => row.value === detail.type);
+  const matchTypeObj = TYPE_LIST.find(row => row.value === detail.type);
   if (matchTypeObj) {
     typeName = matchTypeObj.title;
   }
@@ -40,9 +40,7 @@ const DetailModal = (props: DetailModalProps) => {
         <div className={styles.row}>
           <div className={styles.item}>
             <span className={styles.label}>资源类型:</span>
-            <span className={styles.value}>
-              {typeName}
-            </span>
+            <span className={styles.value}>{typeName}</span>
           </div>
           <div className={styles.item}>
             <span className={styles.label}>资源码:</span>

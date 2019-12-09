@@ -15,10 +15,10 @@ import {
 } from 'antd';
 import router from 'umi/router';
 import styles from './index.module.less';
-import { PageBasicPropsModel } from '../../interfaces/common';
-import { typeList } from '../index';
+import { PageBasicPropsModel, CustomWindow } from '../interfaces/common';
 import { TreeNode } from 'antd/lib/tree-select';
 import { Container } from '@td-design/web';
+import { TYPE_LIST } from '../constant';
 
 const FormItem = Form.Item;
 const { Option } = Select;
@@ -50,6 +50,7 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
   const [id, setId] = useState<string>('');
   const [menu, setMenu] = useState<TreeNode[]>([]);
   const [typeValue, setTypeValue] = useState<number | undefined>(undefined);
+  const [values, setValues] = useState<defs.authorization.ResourceDetails>(API.authorization.resource.detail.init);
 
   const treeFormatter = useCallback((list: defs.authorization.ResourceTreeObject[]) => {
     const data: TreeNode[] = [];
@@ -76,7 +77,7 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
   const fetchMenu = useCallback(async () => {
     try {
       const response = await API.authorization.resource.listTree.fetch({
-        clientKey: sessionStorage.getItem('clientKey') || '',
+        clientKey: ((window as unknown) as CustomWindow).authConfig.client_id,
       });
       setMenu(treeFormatter(response.data));
     } catch (error) {
@@ -89,7 +90,7 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
       try {
         const response = await API.authorization.resource.detail.fetch({ id });
         const { parentId } = response.data;
-        setFieldsValue({...response.data, parentId: parentId ? parentId : undefined });
+        setValues({ ...response.data, parentId: parentId ? parentId : undefined });
         setTypeValue(response.data.isVisible);
       } catch (error) {
         message.error(error.message);
@@ -116,7 +117,7 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
           values = id ? { ...values, id } : values;
           await API.authorization.resource.newResource.fetch({
             ...values,
-            clientKey: sessionStorage.getItem('clientKey') || '',
+            clientKey: ((window as unknown) as CustomWindow).authConfig.client_id,
           });
           message.success(`${id ? '编辑' : '新增'}资源成功`);
           router.push({ pathname: '/resource' });
@@ -136,7 +137,7 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
       onOk: async () => {
         try {
           await API.authorization.resource.deleteResource.fetch({
-            clientKey: sessionStorage.getItem('clientKey') || '',
+            clientKey: ((window as unknown) as CustomWindow).authConfig.client_id,
             id,
           });
           message.success('删除成功!');
@@ -154,12 +155,16 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
         <Row>
           <Col span={12}>
             <FormItem label="父级菜单">
-              {getFieldDecorator('parentId')(<TreeSelect allowClear treeData={menu} />)}
+              {getFieldDecorator('parentId', {
+                initialValue: values.parentId,
+              })(<TreeSelect allowClear treeData={menu} />)}
             </FormItem>
           </Col>
           <Col span={12}>
             <FormItem label="资源顺位">
-              {getFieldDecorator('orderValue')(<InputNumber min={1} style={{ width: '100%' }} />)}
+              {getFieldDecorator('orderValue', {
+                initialValue: values.orderValue,
+              })(<InputNumber min={1} style={{ width: '100%' }} />)}
             </FormItem>
           </Col>
         </Row>
@@ -173,12 +178,15 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
                     message: '请输入资源标识',
                   },
                 ],
-              })(<Input />)}
+                initialValue: values.resourceKey
+              })(<Input placeholder="资源标识不能重复" />)}
             </FormItem>
           </Col>
           <Col span={12}>
             <FormItem label="拓展字段">
-              {getFieldDecorator('resourceBusinessValue')(<Input />)}
+              {getFieldDecorator('resourceBusinessValue', {
+                initialValue: values.resourceBusinessValue,
+              })(<Input />)}
             </FormItem>
           </Col>
         </Row>
@@ -192,11 +200,14 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
                     message: '请输入资源URL',
                   },
                 ],
+                initialValue: values.apiUrl
               })(<Input />)}
             </FormItem>
           </Col>
           <Col span={12}>
-            <FormItem label="图标">{getFieldDecorator('icon')(<Input />)}</FormItem>
+            <FormItem label="图标">{getFieldDecorator('icon', {
+              initialValue: values.icon,
+            })(<Input />)}</FormItem>
           </Col>
         </Row>
         <Row>
@@ -209,9 +220,10 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
                     message: '请选择资源类型',
                   },
                 ],
+                initialValue: values.type
               })(
                 <Select allowClear onChange={(value: number) => setTypeValue(value)}>
-                  {typeList.map(item => (
+                  {TYPE_LIST.map(item => (
                     <Option key={item.value} value={item.value}>
                       {item.title}
                     </Option>
@@ -221,7 +233,9 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
             </FormItem>
           </Col>
           <Col span={12}>
-            <FormItem label="资源码">{getFieldDecorator('permissionCode')(<Input />)}</FormItem>
+            <FormItem label="资源码">{getFieldDecorator('permissionCode', {
+              initialValue: values.permissionCode,
+            })(<Input />)}</FormItem>
           </Col>
         </Row>
         {typeValue === 0 && (
@@ -235,6 +249,7 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
                       message: '请选择',
                     },
                   ],
+                  initialValue: values.isVisible
                 })(
                   <Radio.Group>
                     <Radio value={1}>是</Radio>
@@ -255,6 +270,7 @@ const ResourceForm: React.FC<ResourceFormProps> = props => {
                     message: '请输入资源描述',
                   },
                 ],
+                initialValue: values.description
               })(<TextArea />)}
             </FormItem>
           </Col>
